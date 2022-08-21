@@ -1,0 +1,4 @@
+torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+scikit-image==0.18.2+computecanada
+scikit-learn==1.0.1+computecanada
+nibabel==3.2.1+computecanada

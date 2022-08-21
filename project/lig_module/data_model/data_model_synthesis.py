@@ -200,14 +200,21 @@ class SynthesisDataModule(pl.LightningDataModule):
             if self.kfold_num != (idx + 1):
                 continue
 
-            all_samples, num_samples_exams = np.array(all_samples), np.array(num_samples_exams)
-            training_samples, val_samples = all_samples[train_index], all_samples[val_index]
+            all_samples, num_samples_exams = np.array(all_samples), np.array(
+                num_samples_exams
+            )
+            training_samples, val_samples = (
+                all_samples[train_index],
+                all_samples[val_index],
+            )
             training_num_samples_exams, val_num_samples_exams = (
                 num_samples_exams[train_index],
                 num_samples_exams[val_index],
             )
 
-            for training_sample, num_exams in zip(training_samples, training_num_samples_exams):
+            for training_sample, num_exams in zip(
+                training_samples, training_num_samples_exams
+            ):
                 get_samples(
                     training_sample,
                     n_scans=num_exams,
@@ -227,10 +234,18 @@ class SynthesisDataModule(pl.LightningDataModule):
                     sample_ids=val_sample_ids,
                 )
 
-            train_X_paths: np.ndarray = build_ndarray_and_create_idx_to_img(train_X_paths)
-            train_y_paths: np.ndarray = build_ndarray_and_create_idx_to_img(train_y_paths)
-            train_predict_time: np.ndarray = build_ndarray_and_create_idx_to_img(train_predict_time)
-            train_sample_ids: np.ndarray = build_ndarray_and_create_idx_to_img(train_sample_ids)
+            train_X_paths: np.ndarray = build_ndarray_and_create_idx_to_img(
+                train_X_paths
+            )
+            train_y_paths: np.ndarray = build_ndarray_and_create_idx_to_img(
+                train_y_paths
+            )
+            train_predict_time: np.ndarray = build_ndarray_and_create_idx_to_img(
+                train_predict_time
+            )
+            train_sample_ids: np.ndarray = build_ndarray_and_create_idx_to_img(
+                train_sample_ids
+            )
 
             self.train_dataset = SynthesisDataset(
                 X_paths=train_X_paths,
@@ -249,8 +264,15 @@ class SynthesisDataModule(pl.LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         print(f"get {len(self.train_dataset)} training 3D image!")
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=NUM_WORKERS, shuffle=True)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            num_workers=NUM_WORKERS,
+            shuffle=True,
+        )
 
     def val_dataloader(self) -> DataLoader:
         print(f"get {len(self.val_dataset)} validation 3D image!")
-        return DataLoader(self.val_dataset, batch_size=1, num_workers=NUM_WORKERS, shuffle=False)
+        return DataLoader(
+            self.val_dataset, batch_size=1, num_workers=NUM_WORKERS, shuffle=False
+        )

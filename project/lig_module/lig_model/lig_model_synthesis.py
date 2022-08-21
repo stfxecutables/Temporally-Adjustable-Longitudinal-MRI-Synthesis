@@ -76,10 +76,7 @@ class SynthesisLitModel(pl.LightningModule):
         elif self.hparams.loss == "smoothl1":
             self.criterion = SmoothL1Loss()
 
-        if self.hparams.dataset == "ISBI2015":
-            self.img_size = MS_IMG_SIZE
-        elif self.hparams.dataset == "novel":
-            self.img_size = MS_IMG_SIZE_NOVEL
+        self.img_size = MS_IMG_SIZE
         self.patch_loc = compute_3Dpatch_loc(in_size=self.img_size)
         ones_patches = np.ones((8, 1, *PATCH_SIZE_3D))
         self.count_ndarray = patch_3D_aggregator(
@@ -89,14 +86,19 @@ class SynthesisLitModel(pl.LightningModule):
     def forward(self, x: Tensor, predict_time: Tensor) -> Tensor:
         return self.model(x, predict_time)
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str], batch_idx: int):
+    def training_step(
+        self,
+        batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str],
+        batch_idx: int,
+    ):
         inputs, targets, predict_time, _, real_aux = batch
         logits = self(inputs, predict_time)
         loss = self.criterion(logits, targets)
 
         if self.hparams.kfold_num == 1:
             if (self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1) or (
-                (self.current_epoch % self.hparams.max_epochs - 1 == 0) and batch_idx == 1
+                (self.current_epoch % self.hparams.max_epochs - 1 == 0)
+                and batch_idx == 1
             ):
                 log_training_img(
                     module=self,
@@ -117,12 +119,16 @@ class SynthesisLitModel(pl.LightningModule):
         # [batch size = 1, num patches = 8, channels, 128, 128, 128]
         input_patches, target_patches, predict_time, sample_id = batch
 
-        logits_patches: Tensor = torch.zeros_like(target_patches).type_as(target_patches)
+        logits_patches: Tensor = torch.zeros_like(target_patches).type_as(
+            target_patches
+        )
         # create 8 predict_time for input_patches:
         predict_time = predict_time.repeat(1, 8, 1, 1, 1, 1)
         for i in range(8):
             # change to (batch size, channels, patch_size, patch_size, patch_size)
-            logits_patches[:, i, ...] = self(input_patches[:, i, ...], predict_time[:, i, ...])
+            logits_patches[:, i, ...] = self(
+                input_patches[:, i, ...], predict_time[:, i, ...]
+            )
 
         loss = self.criterion(logits_patches, target_patches)
         self.log("val_loss", loss, sync_dist=True, on_step=True, on_epoch=True)
@@ -161,38 +167,35 @@ class SynthesisLitModel(pl.LightningModule):
         )
         # Code for computing PSNR is adapted from
         # https://github.com/agis85/multimodal_brain_synthesis/blob/master/error_metrics.py#L32
-        data_range = np.max([predicts.max(), targets.max()]) - np.min([predicts.min(), targets.min()])
+        data_range = np.max([predicts.max(), targets.max()]) - np.min(
+            [predicts.min(), targets.min()]
+        )
         psnr_ = psnr(targets, predicts, data_range=data_range)
-        if self.hparams.dataset != "novel":
-            first_time_point, second_time_point = self.get_first_and_second_time_point(sample_id[0])
-            if self.hparams.kfold_num == 1:
-                if (self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1) or (
-                    (self.current_epoch % self.hparams.max_epochs - 1 == 0) and batch_idx == 1
-                ):
-                    brain_slices = BrainSlices(
-                        lightning=self,
-                        img=inputs,
-                        target=targets,
-                        prediction=predicts,
-                        first_time_point=first_time_point,
-                        second_time_point=second_time_point,
-                    )
-                    fig = brain_slices.plot()
-                    brain_slices.log("val", fig, ssim_, batch_idx)
-        else:
-            if self.hparams.kfold_num == 1:
-                if (self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1) or (
-                    (self.current_epoch % self.hparams.max_epochs - 1 == 0) and batch_idx == 1
-                ):
-                    brain_slices = BrainSlices(
-                        lightning=self, img=inputs, target=targets, prediction=predicts, sample_id=sample_id
-                    )
-                    fig = brain_slices.plot()
-                    brain_slices.log("val", fig, ssim_, batch_idx)
+
+        first_time_point, second_time_point = self.get_first_and_second_time_point(
+            sample_id[0]
+        )
+        if self.hparams.kfold_num == 1:
+            if (self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1) or (
+                (self.current_epoch % self.hparams.max_epochs - 1 == 0)
+                and batch_idx == 1
+            ):
+                brain_slices = BrainSlices(
+                    lightning=self,
+                    img=inputs,
+                    target=targets,
+                    prediction=predicts,
+                    first_time_point=first_time_point,
+                    second_time_point=second_time_point,
+                )
+                fig = brain_slices.plot()
+                brain_slices.log("val", fig, ssim_, batch_idx)
 
         return {"MSE": mse_, "SSIM": ssim_, "PSNR": psnr_, "NMSE": nmse_}
 
-    def get_average_on_gpus(self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]], metric: str) -> None:
+    def get_average_on_gpus(
+        self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]], metric: str
+    ) -> None:
         average = np.mean([x[metric] for x in validation_step_outputs])
         self.log(f"val_{metric}", average, sync_dist=True, on_step=False, on_epoch=True)
 
@@ -205,7 +208,9 @@ class SynthesisLitModel(pl.LightningModule):
             else:
                 continue
 
-    def validation_epoch_end(self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
+    def validation_epoch_end(
+        self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]]
+    ) -> None:
         metrics = ["MSE", "SSIM", "PSNR", "NMSE"]
         for metric in metrics:
             self.get_average_on_gpus(validation_step_outputs, metric)
@@ -214,12 +219,16 @@ class SynthesisLitModel(pl.LightningModule):
         # [batch size = 1, num patches = 8, channels, 128, 128, 128]
         input_patches, target_patches, predict_time, sample_id = batch
 
-        logits_patches: Tensor = torch.zeros_like(target_patches).type_as(target_patches)
+        logits_patches: Tensor = torch.zeros_like(target_patches).type_as(
+            target_patches
+        )
         # create 8 predict_time for input_patches:
         predict_time = predict_time.repeat(1, 8, 1, 1, 1, 1)
         for i in range(8):
             # change to (batch size, channels, patch_size, patch_size, patch_size)
-            logits_patches[:, i, ...] = self(input_patches[:, i, ...], predict_time[:, i, ...])
+            logits_patches[:, i, ...] = self(
+                input_patches[:, i, ...], predict_time[:, i, ...]
+            )
 
         loss = self.criterion(logits_patches, target_patches)
         self.log("val_loss", loss, sync_dist=True, on_step=True, on_epoch=True)
@@ -258,10 +267,14 @@ class SynthesisLitModel(pl.LightningModule):
         )
         # Code for computing PSNR is adapted from
         # https://github.com/agis85/multimodal_brain_synthesis/blob/master/error_metrics.py#L32
-        data_range = np.max([predicts.max(), targets.max()]) - np.min([predicts.min(), targets.min()])
+        data_range = np.max([predicts.max(), targets.max()]) - np.min(
+            [predicts.min(), targets.min()]
+        )
         psnr_ = psnr(targets, predicts, data_range=data_range)
 
-        first_time_point, second_time_point = self.get_first_and_second_time_point(sample_id[0])
+        first_time_point, second_time_point = self.get_first_and_second_time_point(
+            sample_id[0]
+        )
         if first_time_point == "1" and second_time_point == "2":
             return {
                 "MSE": mse_,
@@ -286,7 +299,9 @@ class SynthesisLitModel(pl.LightningModule):
         else:
             return {"MSE": mse_, "SSIM": ssim_, "PSNR": psnr_, "NMSE": nmse_}
 
-    def test_epoch_end(self, test_step_outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
+    def test_epoch_end(
+        self, test_step_outputs: List[Union[Tensor, Dict[str, Any]]]
+    ) -> None:
         metrics = ["MSE", "SSIM", "PSNR", "NMSE"]
         for metric in metrics:
             self.get_average_on_gpus(test_step_outputs, metric)
@@ -294,7 +309,9 @@ class SynthesisLitModel(pl.LightningModule):
         ssim = np.mean([x["SSIM"] for x in test_step_outputs])
 
         visualization_dict = {}
-        visualization_dict["input"] = self.get_image_from_step_outputs(test_step_outputs, "input")
+        visualization_dict["input"] = self.get_image_from_step_outputs(
+            test_step_outputs, "input"
+        )
         for idx in range(2, 7):
             visualization_dict["predict" + str(idx)] = self.get_image_from_step_outputs(
                 test_step_outputs, "predict" + str(idx)
@@ -307,7 +324,9 @@ class SynthesisLitModel(pl.LightningModule):
             )
         print(f"visualization_dict: {visualization_dict}")
         print(f"validation step outputs: {test_step_outputs}")
-        six_timepoint_brain_slices = SixTimepointBrainSlices(lightning=self, img=visualization_dict)
+        six_timepoint_brain_slices = SixTimepointBrainSlices(
+            lightning=self, img=visualization_dict
+        )
         fig = six_timepoint_brain_slices.plot()
         six_timepoint_brain_slices.log("val", fig, ssim=ssim)
 
@@ -330,7 +349,9 @@ class SynthesisLitModel(pl.LightningModule):
         elif self.hparams.lr_policy == "linear":
             lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
                 optimizer,
-                lr_lambda=LambdaLR(self.hparams.max_epochs, 0, self.hparams.decay_epoch).step,
+                lr_lambda=LambdaLR(
+                    self.hparams.max_epochs, 0, self.hparams.decay_epoch
+                ).step,
             )
 
         lr_dict = {
@@ -346,8 +367,15 @@ class SynthesisLitModel(pl.LightningModule):
     def add_model_specific_args(parent_parser: ArgumentParser) -> ArgumentParser:
         parser = parent_parser.add_argument_group("LitModel")
         parser.add_argument("--learning_rate", type=float, default=1e-5)
-        parser.add_argument("--loss", type=str, choices=["l1", "l2", "smoothl1", "SSIM", "MS_SSIM"], default="l1")
-        parser.add_argument("--activation", type=str, choices=["ReLU", "LeakyReLU"], default="LeakyReLU")
+        parser.add_argument(
+            "--loss",
+            type=str,
+            choices=["l1", "l2", "smoothl1", "SSIM", "MS_SSIM"],
+            default="l1",
+        )
+        parser.add_argument(
+            "--activation", type=str, choices=["ReLU", "LeakyReLU"], default="LeakyReLU"
+        )
         parser.add_argument(
             "--normalization",
             type=str,
@@ -375,5 +403,7 @@ class SynthesisLitModel(pl.LightningModule):
         parser.add_argument("--lambda_l1", type=int, default=300)
         parser.add_argument("--smooth_label", action="store_true")
         parser.add_argument("--putting_time_into_discriminator", action="store_true")
-        parser.add_argument("--GAN_loss", type=str, choices=["MSE", "BCE"], default="MSE")
+        parser.add_argument(
+            "--GAN_loss", type=str, choices=["MSE", "BCE"], default="MSE"
+        )
         return parent_parser

@@ -79,10 +79,7 @@ class GAN(pl.LightningModule):
             else (self.hparams.in_channels + 1),
             putting_time_into_discriminator=self.hparams.putting_time_into_discriminator,
         )  # the output of generator is always 1 channel
-        if self.hparams.dataset == "ISBI2015":
-            self.img_size = MS_IMG_SIZE
-        elif self.hparams.dataset == "novel":
-            self.img_size = MS_IMG_SIZE_NOVEL
+        self.img_size = MS_IMG_SIZE
         self.patch_loc = compute_3Dpatch_loc(in_size=self.img_size)
         ones_patches = np.ones((8, 1, *PATCH_SIZE_3D))
         self.count_ndarray = patch_3D_aggregator(

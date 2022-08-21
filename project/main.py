@@ -3,14 +3,12 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.plugins import DDPPlugin
 
 from lig_module.data_model.data_model_synthesis import SynthesisDataModule
-from lig_module.data_model.data_model_novel import NovelDataModule
 from lig_module.lig_model.lig_model_synthesis import SynthesisLitModel
 from lig_module.lig_model.lig_model_GAN import GAN
 from lig_module.lig_model.lig_model_ACGAN import ACGAN
@@ -76,16 +74,10 @@ def main(hparams: Namespace) -> None:
 
     dict_args = vars(hparams)
 
-    if hparams.dataset == "novel":
-        data_module = NovelDataModule(
-            batch_size=hparams.batch_size,
-            kfold_num=hparams.kfold_num,
-        )
-    else:
-        data_module = SynthesisDataModule(
-            batch_size=hparams.batch_size,
-            kfold_num=hparams.kfold_num,
-        )
+    data_module = SynthesisDataModule(
+        batch_size=hparams.batch_size,
+        kfold_num=hparams.kfold_num,
+    )
 
     if hparams.task == "LongitudinalSynthesis":
         model = SynthesisLitModel(**dict_args)
@@ -128,8 +120,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--batch_size", type=int, default=3, help="batch size")
     parser.add_argument("--kfold_num", type=int, choices=[1, 2, 3, 4, 5], default=5)
-    parser.add_argument("--checkpoint_file", type=str, help="resume from checkpoint file")
-    parser.add_argument("--dataset", type=str, choices=["novel", "ISBI2015"], default="ISBI2015")
+    parser.add_argument(
+        "--checkpoint_file", type=str, help="resume from checkpoint file"
+    )
     parser.add_argument("--max_epochs", type=int, default=150)
     parser.add_argument(
         "--task",

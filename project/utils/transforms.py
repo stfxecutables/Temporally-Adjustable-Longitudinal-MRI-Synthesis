@@ -34,7 +34,13 @@ from monai.transforms import (
 from monai.transforms.compose import Transform
 from PIL import GifImagePlugin
 from torch import set_num_interop_threads
-from utils.const import MS_IMG_SIZE, MS_IMG_SIZE_NOVEL, PATCH_SIZE, PATCH_SIZE_2D, PATCH_SIZE_3D
+from utils.const import (
+    MS_IMG_SIZE,
+    MS_IMG_SIZE_NOVEL,
+    PATCH_SIZE,
+    PATCH_SIZE_2D,
+    PATCH_SIZE_3D,
+)
 
 
 ############################################################################
@@ -49,7 +55,11 @@ def compute_3Dpatch_loc(in_size: Tuple, out_size: Tuple = PATCH_SIZE_3D) -> np.a
     # dim 1, 2, 3
     locs[1][0], locs[1][1], locs[1][2] = 0, (in_size[1] - out_size[1]), 0
     locs[2][0], locs[2][1], locs[2][2] = 0, 0, (in_size[2] - out_size[2])
-    locs[3][0], locs[3][1], locs[3][2] = 0, (in_size[1] - out_size[1]), (in_size[2] - out_size[2])
+    locs[3][0], locs[3][1], locs[3][2] = (
+        0,
+        (in_size[1] - out_size[1]),
+        (in_size[2] - out_size[2]),
+    )
 
     for i in range(4, 8):
         locs[i][0] = in_size[0] - out_size[0]
@@ -138,7 +148,9 @@ def patch_2D_aggregator(
     return orig.squeeze()
 
 
-def generate_patch(roi_start: List[int], img: np.ndarray, roi_size: Tuple[int] = PATCH_SIZE_3D) -> np.ndarray:
+def generate_patch(
+    roi_start: List[int], img: np.ndarray, roi_size: Tuple[int] = PATCH_SIZE_3D
+) -> np.ndarray:
     roi_center = [x + PATCH_SIZE // 2 for x in roi_start]
     spatial_crop = SpatialCrop(roi_center=roi_center, roi_size=roi_size)
     img = spatial_crop(img=img)
@@ -151,22 +163,10 @@ def get_synthesis_transforms() -> Compose:
             LoadImaged(keys=["image", "label"]),
             AddChanneld(keys=["label"]),
             Orientationd(keys=["image", "label"], axcodes="RAS"),
-            ScaleIntensityd(keys=["image", "label"], minv=-1, maxv=1, channel_wise=True),
+            ScaleIntensityd(
+                keys=["image", "label"], minv=-1, maxv=1, channel_wise=True
+            ),
             CenterSpatialCropd(keys=["image", "label"], roi_size=MS_IMG_SIZE),
-        ]
-    )
-
-
-def get_novel_synthesis_transforms() -> Compose:
-    return Compose(
-        [
-            LoadImaged(keys=["image", "label"]),
-            AddChanneld(keys=["label"]),
-            Orientationd(keys=["image", "label"], axcodes="RAS"),
-            Spacingd(keys=["image", "label"], pixdim=(1.0, 1.0, 1.0), mode=("bilinear")),
-            ScaleIntensityd(keys=["image", "label"], minv=-1, maxv=1, channel_wise=True),
-            CenterSpatialCropd(keys=["image", "label"], roi_size=MS_IMG_SIZE_NOVEL),
-            SpatialPadd(keys=["image", "label"], spatial_size=MS_IMG_SIZE_NOVEL, mode="constant"),
         ]
     )
 
@@ -210,10 +210,14 @@ def get_niigz_filename(file_path: str) -> str:
 # Code is from: https://github.com/taozh2017/HiNet/blob/master/funcs/utils.py#L328
 class LambdaLR:
     def __init__(self, n_epochs: int, offset: int, decay_start_epoch: int):
-        assert (n_epochs - decay_start_epoch) > 0, "Decay must start before the training session ends!"
+        assert (
+            n_epochs - decay_start_epoch
+        ) > 0, "Decay must start before the training session ends!"
         self.n_epochs = n_epochs
         self.offset = offset
         self.decay_start_epoch = decay_start_epoch
 
     def step(self, epoch: int) -> Any:
-        return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch) / (self.n_epochs - self.decay_start_epoch)
+        return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch) / (
+            self.n_epochs - self.decay_start_epoch
+        )

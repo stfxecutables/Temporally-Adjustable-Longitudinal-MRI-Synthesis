@@ -30,12 +30,20 @@ class BrainSlices:
     ):
         # Some code is adapted from: https://github.com/fepegar/unet/blob/master/unet/conv.py#L78
         self.lightning = lightning
-        self.input_img: ndarray = img.cpu().detach().numpy().squeeze() if torch.is_tensor(img) else img.squeeze()
+        self.input_img: ndarray = (
+            img.cpu().detach().numpy().squeeze()
+            if torch.is_tensor(img)
+            else img.squeeze()
+        )
         self.target_img: ndarray = (
-            target.cpu().detach().numpy().squeeze() if torch.is_tensor(target) else target.squeeze()
+            target.cpu().detach().numpy().squeeze()
+            if torch.is_tensor(target)
+            else target.squeeze()
         )
         self.predict_img: ndarray = (
-            prediction.cpu().detach().numpy().squeeze() if torch.is_tensor(prediction) else prediction.squeeze()
+            prediction.cpu().detach().numpy().squeeze()
+            if torch.is_tensor(prediction)
+            else prediction.squeeze()
         )
 
         if len(self.input_img.shape) == 3:
@@ -78,26 +86,19 @@ class BrainSlices:
                     self.get_slice(self.predict_img, i, j, k),
                 ]
 
-        if lightning.hparams.dataset != "novel":
-            self.title = [
-                "input image: mprage",
-                "input image: pd",
-                "input image: t2",
-                f"input image {first_time_point} time point: flair",
-                f"target image {second_time_point} time point: flair",
-                "predict image",
-            ]
-        else:
-            self.title = [
-                f"input image  {sample_id}: t1w",
-                "input image: t2w",
-                "input image: flair",
-                "target image: flair",
-                "predict image",
-            ]
+        self.title = [
+            "input image: mprage",
+            "input image: pd",
+            "input image: t2",
+            f"input image {first_time_point} time point: flair",
+            f"target image {second_time_point} time point: flair",
+            "predict image",
+        ]
         self.shape = np.array(self.input_img.shape)
 
-    def get_slice(self, input: ndarray, i: int, j: int, k: int) -> List[Tuple[ndarray, ...]]:
+    def get_slice(
+        self, input: ndarray, i: int, j: int, k: int
+    ) -> List[Tuple[ndarray, ...]]:
         return [input[i, ...], input[:, j, ...], input[:, :, k, ...]]
 
     def plot(self) -> Figure:

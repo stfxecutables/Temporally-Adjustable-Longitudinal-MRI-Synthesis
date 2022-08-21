@@ -15,8 +15,13 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from model.unet.unet import UNet
 from model.GAN.ACGAN_discriminator import ACGANDiscriminator
-from utils.const import MS_IMG_SIZE_NOVEL, MS_IMG_SIZE, PATCH_SIZE_3D
-from utils.transforms import compute_3Dpatch_loc, map_to_range_from_zero_to_one, patch_3D_aggregator, LambdaLR
+from utils.const import MS_IMG_SIZE, PATCH_SIZE_3D
+from utils.transforms import (
+    compute_3Dpatch_loc,
+    map_to_range_from_zero_to_one,
+    patch_3D_aggregator,
+    LambdaLR,
+)
 from utils.visualize import BrainSlices
 from utils.visualize_training import log_training_img
 
@@ -30,7 +35,6 @@ class ACGAN(pl.LightningModule):
             "beta1",
             "optim",
             "log_mod",
-            "dataset",
             "residual",
             "clip_min",
             "clip_max",
@@ -79,11 +83,7 @@ class ACGAN(pl.LightningModule):
             class_num=self.hparams.class_num,
         )  # the output of generator is always 1 channel
 
-        if self.hparams.dataset == "ISBI2015":
-            self.img_size = MS_IMG_SIZE
-        elif self.hparams.dataset == "novel":
-            self.img_size = MS_IMG_SIZE_NOVEL
-
+        self.img_size = MS_IMG_SIZE
         self.patch_loc = compute_3Dpatch_loc(in_size=self.img_size)
         ones_patches = np.ones((8, 1, *PATCH_SIZE_3D))
         self.count_ndarray = patch_3D_aggregator(
@@ -107,7 +107,9 @@ class ACGAN(pl.LightningModule):
         """
         if target_is_real:
             label = torch.ones_like(y_hat).type_as(y_hat)
-            target = torch.mul(label, 0.9) + 0.1 * torch.rand(label.size()).type_as(y_hat)
+            target = torch.mul(label, 0.9) + 0.1 * torch.rand(label.size()).type_as(
+                y_hat
+            )
         else:
             label = torch.zeros_like(y_hat).type_as(y_hat)
             target = label + 0.1 * torch.rand(label.size()).type_as(y_hat)
@@ -125,8 +127,11 @@ class ACGAN(pl.LightningModule):
 
             # log sampled images
             if self.hparams.kfold_num == 1:
-                if (self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1) or (
-                    (self.current_epoch % self.hparams.max_epochs - 1 == 0) and batch_idx == 1
+                if (
+                    self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1
+                ) or (
+                    (self.current_epoch % self.hparams.max_epochs - 1 == 0)
+                    and batch_idx == 1
                 ):
                     log_training_img(
                         module=self,
@@ -156,18 +161,34 @@ class ACGAN(pl.LightningModule):
             D_real_pred, D_real_aux = self.discriminator(real_imgs, predict_time)
             D_real_label = self.get_target_tensor(D_real_pred, target_is_real=True)
             real_loss = self.adversarial_loss(D_real_pred, D_real_label)
-            self.log("real_D_loss", real_loss, sync_dist=True, on_step=True, on_epoch=True)
+            self.log(
+                "real_D_loss", real_loss, sync_dist=True, on_step=True, on_epoch=True
+            )
             # create auxiliary class labels
             real_aux_loss = F.cross_entropy(D_real_aux, real_aux)
-            self.log("real_D_aux_loss", real_aux_loss, sync_dist=True, on_step=True, on_epoch=True)
+            self.log(
+                "real_D_aux_loss",
+                real_aux_loss,
+                sync_dist=True,
+                on_step=True,
+                on_epoch=True,
+            )
             # Fake loss
             fake_imgs = torch.cat((inputs, generated_imgs), 1)
             D_fake_pred, D_fake_aux = self.discriminator(fake_imgs, predict_time)
             D_fake_label = self.get_target_tensor(D_fake_pred, target_is_real=False)
             fake_loss = self.adversarial_loss(D_fake_pred, D_fake_label)
-            self.log("fake_D_loss", fake_loss, sync_dist=True, on_step=True, on_epoch=True)
+            self.log(
+                "fake_D_loss", fake_loss, sync_dist=True, on_step=True, on_epoch=True
+            )
             fake_aux_loss = F.cross_entropy(D_fake_aux, real_aux)
-            self.log("fake_D_aux_loss", fake_aux_loss, sync_dist=True, on_step=True, on_epoch=True)
+            self.log(
+                "fake_D_aux_loss",
+                fake_aux_loss,
+                sync_dist=True,
+                on_step=True,
+                on_epoch=True,
+            )
             loss_D = real_loss + fake_loss + real_aux_loss + fake_aux_loss
 
             self.log("loss_D", loss_D, sync_dist=True, on_step=True, on_epoch=True)
@@ -181,12 +202,16 @@ class ACGAN(pl.LightningModule):
         input_patches, target_patches, predict_time, sample_id = batch
         # (num_patch, channels, patch_size, patch_size, patch_size)
 
-        logits_patches: Tensor = torch.zeros_like(target_patches).type_as(target_patches)
+        logits_patches: Tensor = torch.zeros_like(target_patches).type_as(
+            target_patches
+        )
         # create 8 predict_time for input_patches:
         predict_time = predict_time.repeat(1, 8, 1, 1, 1, 1)
         for i in range(8):
             # change to (batch size, channels, patch_size, patch_size, patch_size)
-            logits_patches[:, i, ...] = self(input_patches[:, i, ...], predict_time[:, i, ...])
+            logits_patches[:, i, ...] = self(
+                input_patches[:, i, ...], predict_time[:, i, ...]
+            )
 
         loss = self.criterion(logits_patches, target_patches)
         self.log("val_loss", loss, sync_dist=True, on_step=True, on_epoch=True)
@@ -225,50 +250,46 @@ class ACGAN(pl.LightningModule):
         )
         # Code for computing PSNR is adapted from
         # https://github.com/agis85/multimodal_brain_synthesis/blob/master/error_metrics.py#L32
-        data_range = np.max([predicts.max(), targets.max()]) - np.min([predicts.min(), targets.min()])
+        data_range = np.max([predicts.max(), targets.max()]) - np.min(
+            [predicts.min(), targets.min()]
+        )
         psnr_ = psnr(targets, predicts, data_range=data_range)
-
-        if self.hparams.dataset != "novel":
-            first_time_point, second_time_point = self.get_first_and_second_time_point(sample_id[0])
-            if self.hparams.kfold_num == 1:
-                if (self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1) or (
-                    (self.current_epoch % self.hparams.max_epochs - 1 == 0) and batch_idx == 1
-                ):
-                    brain_slices = BrainSlices(
-                        lightning=self,
-                        img=inputs,
-                        target=targets,
-                        prediction=predicts,
-                        first_time_point=first_time_point,
-                        second_time_point=second_time_point,
-                    )
-                    fig = brain_slices.plot()
-                    brain_slices.log("val", fig, ssim_, batch_idx)
-        else:
-            if self.hparams.kfold_num == 1:
-                if (
-                    self.current_epoch % self.hparams.log_mod == 0
-                    or self.current_epoch % self.hparams.max_epochs - 1 == 0
-                ):
-                    brain_slices = BrainSlices(
-                        lightning=self, img=inputs, target=targets, prediction=predicts, sample_id=sample_id
-                    )
-                    fig = brain_slices.plot()
-                    brain_slices.log("val", fig, ssim_, batch_idx)
+        first_time_point, second_time_point = self.get_first_and_second_time_point(
+            sample_id[0]
+        )
+        if self.hparams.kfold_num == 1:
+            if (self.current_epoch % self.hparams.log_mod == 0 and batch_idx == 1) or (
+                (self.current_epoch % self.hparams.max_epochs - 1 == 0)
+                and batch_idx == 1
+            ):
+                brain_slices = BrainSlices(
+                    lightning=self,
+                    img=inputs,
+                    target=targets,
+                    prediction=predicts,
+                    first_time_point=first_time_point,
+                    second_time_point=second_time_point,
+                )
+                fig = brain_slices.plot()
+                brain_slices.log("val", fig, ssim_, batch_idx)
 
         if len(inputs.shape) == 4:
             brain_mask = inputs[0] == inputs[0][0][0][0]
-        else:
+        else:    
             brain_mask = inputs == inputs[0][0][0]
 
-        pred_clip = np.clip(predicts, -self.hparams.clip_min, self.hparams.clip_max) - min(
-            -self.hparams.clip_min, np.min(predicts)
+        pred_clip = np.clip(
+            predicts, -self.hparams.clip_min, self.hparams.clip_max
+        ) - min(-self.hparams.clip_min, np.min(predicts))
+        targ_clip = np.clip(
+            targets, -self.hparams.clip_min, self.hparams.clip_max
+        ) - min(-self.hparams.clip_min, np.min(targets))
+        pred_255 = np.floor(
+            256 * (pred_clip / (self.hparams.clip_min + self.hparams.clip_max))
+        )    
+        targ_255 = np.floor(
+            256 * (targ_clip / (self.hparams.clip_min + self.hparams.clip_max))
         )
-        targ_clip = np.clip(targets, -self.hparams.clip_min, self.hparams.clip_max) - min(
-            -self.hparams.clip_min, np.min(targets)
-        )
-        pred_255 = np.floor(256 * (pred_clip / (self.hparams.clip_min + self.hparams.clip_max)))
-        targ_255 = np.floor(256 * (targ_clip / (self.hparams.clip_min + self.hparams.clip_max)))
         pred_255[brain_mask] = 0
         targ_255[brain_mask] = 0
 
@@ -277,11 +298,15 @@ class ACGAN(pl.LightningModule):
 
         return {"MAE": mae, "MSE": mse_, "SSIM": ssim_, "PSNR": psnr_, "NMSE": nmse_}
 
-    def get_average_on_gpus(self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]], metric: str) -> None:
+    def get_average_on_gpus(
+        self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]], metric: str
+    ) -> None:
         average = np.mean([x[metric] for x in validation_step_outputs])
         self.log(f"val_{metric}", average, sync_dist=True, on_step=False, on_epoch=True)
 
-    def validation_epoch_end(self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
+    def validation_epoch_end(
+        self, validation_step_outputs: List[Union[Tensor, Dict[str, Any]]]
+    ) -> None:
         metrics = ["MSE", "SSIM", "PSNR", "NMSE"]
         for metric in metrics:
             self.get_average_on_gpus(validation_step_outputs, metric)
@@ -307,11 +332,15 @@ class ACGAN(pl.LightningModule):
         elif self.hparams.lr_policy == "linear":
             lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
                 optimizer_G,
-                lr_lambda=LambdaLR(self.hparams.max_epochs, 0, self.hparams.decay_epoch).step,
+                lr_lambda=LambdaLR(
+                    self.hparams.max_epochs, 0, self.hparams.decay_epoch
+                ).step,
             )
             lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(
                 optimizer_D,
-                lr_lambda=LambdaLR(self.hparams.max_epochs, 0, self.hparams.decay_epoch).step,
+                lr_lambda=LambdaLR(
+                    self.hparams.max_epochs, 0, self.hparams.decay_epoch
+                ).step,
             )
 
         return [optimizer_G, optimizer_D], [lr_scheduler_G, lr_scheduler_D]

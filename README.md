@@ -13,57 +13,83 @@ ARXIV
 -->
 
 </div>
- 
-## Description   
-What it does   
 
-## How to run   
-First, install dependencies   
+## Abstract
+Multiple Sclerosis (MS) is a chronic progressive neurological disease characterized by the development of lesions in the white matter of the brain. T2-fluid-attenuated inversion recovery (FLAIR) brain magnetic resonance imaging (MRI) provides superior visualization and characterization of MS lesions, relative to other MRI modalities. Longitudinal brain FLAIR MRI in MS, involving repetitively imaging a patient over time, provides helpful information for clinicians towards monitoring disease progression. Predicting future whole brain MRI examinations with variable time lag has only been attempted in limited applications, such as healthy aging and structural degeneration in Alzheimer’s Disease. In this article, we present novel modifications to deep learning architectures for MS FLAIR image synthesis / estimation, in order to support prediction of longitudinal images in a flexible continuous way. This is achieved with learned transposed convolutions, which supports modeling time as a spatially distributed array with variable temporal properties at different spatial locations. Thus, this approach can theoretically model spatially-specific time-dependent brain development, supporting the modeling of more rapid growth at appropriate physical locations, such as the site of an MS brain lesion. This approach also supports the clinician user to define how far into the future a predicted examination should target. Four distinct deep learning architectures have been developed. The ISBI2015 longitudinal MS dataset was used to validate and compare our proposed approaches. Results demonstrate that a modified ACGAN achieves the best performance and reduces variability in model accuracy.
+
+## Example Predicted Images 
+<!-- ![quanlitative_result](figs/qualitative_result_.jpg) -->
+<img src="figs/qualitative_result_.jpg" width = "450" alt="quanlitative_result" align=center />
+
+## Installation
+First, install following dependencies
 ```bash
-# clone project   
-git clone https://github.com/YourGithubName/deep-learning-project-template
-
-# install project   
-cd deep-learning-project-template 
-pip install -e .   
-pip install -r requirements.txt
- ```   
- Next, navigate to any file and run it.   
- ```bash
-# module folder
-cd project
-
-# run module (example: mnist as your main contribution)   
-python lit_classifier_main.py    
+torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+scikit-image==0.18.2
+scikit-learn==1.0.1
+nibabel==3.2.1
+scipy==1.7.0
+monai==0.7.0
+pytorch-lightning==1.4.0
 ```
 
-## Imports
-This project is setup as a package which means you can now easily import any file into any other file like so:
-```python
-from project.datasets.mnist import mnist
-from project.lit_classifier_main import LitClassifier
-from pytorch_lightning import Trainer
-
-# model
-model = LitClassifier()
-
-# data
-train, val, test = mnist()
-
-# train
-trainer = Trainer()
-trainer.fit(model, train, val)
-
-# test using the best model!
-trainer.test(test_dataloaders=test)
+## Folder Structure
+```bash
+MS-Longitudinal-FLAIR-MR-Image-Synthesis/
+├── data
+│   └── MS - ISBI 2015 Longitudinal MS Lesion Segmentation Challenge dataset, each folder contains subjects with the same number of time-points
+│       ├── exams-4
+│       ├── exams-5
+│       └── exams-6
+├── Job_scripts - Job scripts to run different models
+│   ├── run_Cedar_MS_ACGAN.sh
+│   ├── run_Narval_MS_dGAN.sh
+│   ├── run_Narval_MS_rUNet.sh
+│   └── run_Narval_MS_gGAN.sh
+├── LICENSE
+├── project
+│   ├── __init__.py
+│   ├── lig_module - Pytorch Lightning modules
+│   │   ├── data_model
+│   │   │   └── data_model_synthesis.py
+│   │   └── lig_model
+│   │       ├── lig_model_ACGAN.py
+│   │       ├── lig_model_GAN.py
+│   │       └── lig_model_synthesis.py
+│   ├── main.py - main file to start/resume training
+│   ├── model - The architecture of the model
+│   │   ├── create_structure_data.py
+│   │   ├── GAN
+│   │   │   ├── ACGAN_discriminator.py
+│   │   │   └── discriminator.py
+│   │   └── unet
+│   │       ├── conv.py
+│   │       ├── decoding.py
+│   │       ├── encoding.py
+│   │       ├── __init__.py
+│   │       └── unet.py
+│   └── utils - utils and visualization
+│       ├── const.py
+│       ├── inference.py
+│       ├── plot.py
+│       ├── predict_img.py
+│       ├── read_data.py
+│       ├── summary_of_all_layers.py
+│       ├── transforms.py
+│       ├── visualize_6_timepoint_sample.py
+│       ├── visualize.py
+│       └── visualize_training.py
+└── README.md
 ```
 
-### Citation   
-```
-@article{YourName,
-  title={Your Title},
-  author={Your team},
-  journal={Location},
-  year={Year}
-}
-```   
+
+## Train
+To run the experiments from our paper the following bash scripts specifies the commands to run: 
+|              Network               | Job Script                           |
+| :--------------------------------: | ------------------------------------ |
+|           Modified ACGAN           | ./Job_scripts/run_Cedar_MS_ACGAN.sh  |
+| Discriminator-Induced Time 3D cGAN | ./Job_scripts/run_Narval_MS_dGAN.sh  |
+|   Generator-Induced Time 3D cGAN   | ./Job_scripts/run_Narval_MS_gGAN.sh  |
+|              3D rUNet              | ./Job_scripts/run_Narval_MS_rUNet.sh |
+
+(It would take around 6 ~ 8 hours to train each model parallelled on 4 A100 GPUs (40GB).)

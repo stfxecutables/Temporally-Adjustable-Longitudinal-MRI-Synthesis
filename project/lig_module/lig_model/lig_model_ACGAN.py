@@ -148,6 +148,7 @@ class ACGAN(pl.LightningModule):
             # D_fake_result shape: [3, 1, 6, 6, 6]
             D_fake_label = self.get_target_tensor(D_fake_pred, target_is_real=True)
             loss_GAN = self.adversarial_loss(D_fake_pred, D_fake_label)
+            loss_aux = F.cross_entropy(D_fake_aux, real_aux)
             loss_G = self.hparams.lambda_l1 * fix_loss + loss_GAN
 
             self.log("loss_G", loss_G, sync_dist=True, on_step=True, on_epoch=True)
@@ -275,7 +276,7 @@ class ACGAN(pl.LightningModule):
 
         if len(inputs.shape) == 4:
             brain_mask = inputs[0] == inputs[0][0][0][0]
-        else:    
+        else:
             brain_mask = inputs == inputs[0][0][0]
 
         pred_clip = np.clip(
@@ -286,7 +287,7 @@ class ACGAN(pl.LightningModule):
         ) - min(-self.hparams.clip_min, np.min(targets))
         pred_255 = np.floor(
             256 * (pred_clip / (self.hparams.clip_min + self.hparams.clip_max))
-        )    
+        )
         targ_255 = np.floor(
             256 * (targ_clip / (self.hparams.clip_min + self.hparams.clip_max))
         )

@@ -1,17 +1,3 @@
-#!/bin/bash
-#SBATCH --account=def-emazerol
-#SBATCH --gres=gpu:a100:4
-#SBATCH --mem=510000M                      # memory
-#SBATCH --cpus-per-task=48
-#SBATCH --output=ACGAN-%j.out             # %N for node name, %j for jobID
-#SBATCH --time=00-04:45                    # time (DD-HH:MM)
-#SBATCH --mail-user=x2019cwn@stfx.ca       # used to send email
-#SBATCH --mail-type=ALL
-
-SOURCEDIR=/home/jueqi/projects/def-jlevman/jueqi/
-
-module load python/3.8.10 scipy-stack
-
 # debugging flags (optional)
 export NCCL_DEBUG=INFO
 export NCCL_DEBUG=WARN

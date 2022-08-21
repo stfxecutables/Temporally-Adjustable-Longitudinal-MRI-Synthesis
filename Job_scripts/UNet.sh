@@ -1,32 +1,23 @@
-#!/bin/bash
-#SBATCH --account=def-jlevman
-#SBATCH --gres=gpu:t4:4
-#SBATCH --mem=124G                   # memory
-#SBATCH --cpus-per-task=8
-#SBATCH --output=MS_test-%j.out      # %N for node name, %j for jobID
-#SBATCH --time=00-01:00              # time (DD-HH:MM)
-#SBATCH --mail-user=x2019cwn@stfx.ca # used to send email
-#SBATCH --mail-type=ALL
-
-SOURCEDIR=/home/jueqi/projects/def-jlevman/jueqi/
-
 # debugging flags (optional)
 export NCCL_DEBUG=INFO
+export NCCL_DEBUG=WARN
 export PYTHONFAULTHANDLER=1
-export NCCL_SOCKET_IFNAME=^docker0,lo
 
 # set NCCL parameters to speed up
-export NCCL_NSOCKS_PERTHREAD=4
-export NCCL_SOCKET_NTHREADS=2
+# export NCCL_NSOCKS_PERTHREAD=4
+# export NCCL_SOCKET_NTHREADS=2
+# export NCCL_SOCKET_IFNAME=eth0
+export NCCL_IB_DISABLE=1
+export NCCL_P2P_DISABLE=1
 
 # force to synchronization, can pinpoint the exact number of lines of error code where our memory operation is observed
-CUDA_LAUNCH_BLOCKING=1
+export CUDA_LAUNCH_BLOCKING=1
 
 # Prepare virtualenv
 #virtualenv --no-download $SLURM_TMPDIR/env
 #source $SLURM_TMPDIR/env/bin/activate && echo "$(date +"%T"):  Activated python virtualenv"
 #pip install -r $SOURCEDIR/requirements.txt && echo "$(date +"%T"):  install successfully!"
-source /home/jueqi/ENV/bin/activate && echo "$(date +"%T"):  Activated python virtualenv"
+# source /home/jueqi/ENV/bin/activate && echo "$(date +"%T"):  Activated python virtualenv"
 
 echo -e '\n'
 cd $SLURM_TMPDIR
@@ -36,7 +27,7 @@ tar -xf /home/jueqi/projects/def-jlevman/jueqi/Data/MS.tar -C work && echo "$(da
 
 cd work
 
-GPUS=1
+GPUS=4
 LOSS=l1                      # l1 l2 smoothl1 SSIM MS_SSIM
 BETA1=0.5
 CLIP_MIN=2
@@ -45,8 +36,8 @@ LOG_MOD=15
 OPTIM=Adam                   # Adam AdamW
 KFOLD_NUM=1
 LAMBDA_L1=1                  # 100 300
-MAX_EPOCHS=79
-BATCH_SIZE=1
+MAX_EPOCHS=500
+BATCH_SIZE=3
 GAN_LOSS=BCE                 # BCE MSE
 IN_CHANNELS=4
 DECAY_EPOCH=25
@@ -64,7 +55,6 @@ echo -e '\n\n\n'
 echo "$(date +"%T"):  start running model!"
 tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/projects/def-jlevman/jueqi/MS/2/project/main.py \
        --use_tanh \
-       --fine_tune \
        --gpus=$GPUS \
        --loss="$LOSS" \
        --optim=$OPTIM \
@@ -85,20 +75,4 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/projects/de
        --learning_rate=$LEARNING_RATE \
        --lr_scheduler="$LR_SCHEDULER" \
        --normalization="$NORMALIZATION" \
-       --checkpoint_file="epoch=77-val_loss=0.11056-val_MSE=0.00781-val_SSIM=0.87257-val_PSNR=23.82034-val_NMSE=0.40433.ckpt" \
        --tensor_board_logger="$LOG_DIR" && echo "$(date +"%T"):  Finished running!"
-
-#       --use_multichannel_input \
-#       --fast_dev_run \
-# --residual
-# --merge_original_patches \
-#        --smooth_label \
-       # --train_with_randomly_cropping \
-#       --predict_with_sliding_window \
-#       --normalization_on_each_subject \
-       # --save_validation_result \
-       # --fine_tune \
-#       --checkpoint_file="epoch=40-val_loss=0.00178-val_MAE=0.32242.ckpt" \
-
-# zip /home/jueqi/projects/def-jlevman/jueqi/Data/flair-AdamW-npz.zip *.npz
-# zip /home/jueqi/projects/def-jlevman/jueqi/Data/flair-AdamW-mp4.zip *.mp4

@@ -1,42 +1,24 @@
 import os
-import random
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, List, Tuple, Union
 
-import nibabel as nib
 import numpy as np
-import torch
-from monai.config import KeysCollection
 from monai.transforms import (
     AddChannel,
     AddChanneld,
-    AsChannelFirstd,
     CenterSpatialCrop,
     CenterSpatialCropd,
     Compose,
-    CropForegroundd,
-    EnsureTyped,
     LoadImage,
     LoadImaged,
-    MapTransform,
-    NormalizeIntensity,
     Orientation,
     Orientationd,
     RandAffined,
-    Resize,
-    SaveImaged,
     ScaleIntensity,
     ScaleIntensityd,
-    Spacingd,
     SpatialCrop,
-    SpatialPad,
-    SpatialPadd,
 )
-from monai.transforms.compose import Transform
-from PIL import GifImagePlugin
-from torch import set_num_interop_threads
 from utils.const import (
     MS_IMG_SIZE,
-    MS_IMG_SIZE_NOVEL,
     PATCH_SIZE,
     PATCH_SIZE_2D,
     PATCH_SIZE_3D,

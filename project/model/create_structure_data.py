@@ -11,7 +11,9 @@ class CreateStructuredData(nn.Module):
         super().__init__()
         self.patch_shape = patch_shape
 
-        def block(stride: int, padding: int, normalize: bool = True, kernel_size: int = 5):
+        def block(
+            stride: int, padding: int, normalize: bool = True, kernel_size: int = 5
+        ):
             layers: List = [
                 ConvTranspose3d(
                     in_channels=1,
@@ -28,7 +30,7 @@ class CreateStructuredData(nn.Module):
             return layers
 
         self.model = nn.Sequential(
-            *block(stride=2, padding=1, normalize=False, kernel_size=3),  # TODO: why the first layer is not normalized?
+            *block(stride=2, padding=1, normalize=False, kernel_size=3),
             *block(stride=4, padding=1, kernel_size=5),
             *block(stride=4, padding=1, kernel_size=5),
             *block(stride=2, padding=2, kernel_size=5),

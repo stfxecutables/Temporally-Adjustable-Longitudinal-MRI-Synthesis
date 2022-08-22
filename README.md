@@ -39,6 +39,7 @@ To run the experiments from our paper the following bash scripts specifies the c
 | Discriminator-Induced Time 3D cGAN | ./Job_scripts/dt-GAN.sh |
 |   Generator-Induced Time 3D cGAN   | ./Job_scripts/gt-GAN.sh |
 |              3D rUNet              | ./Job_scripts/UNet.sh   |
+
 You can also find all the hparams for each models here. It would take around 4 ~ 6 hours to train each model parallelled on 4 A100 GPUs (40GB).
 
 ## Folder Structure

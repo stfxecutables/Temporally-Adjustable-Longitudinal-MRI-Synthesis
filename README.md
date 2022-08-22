@@ -11,17 +11,12 @@
 ARXIV   
 [![Paper](http://img.shields.io/badge/arxiv-math.co:1480.1111-B31B1B.svg)](https://www.nature.com/articles/nature14539)
 -->
-
 </div>
 
 ## Abstract
 Multiple Sclerosis (MS) is a chronic progressive neurological disease characterized by the development of lesions in the white matter of the brain. T2-fluid-attenuated inversion recovery (FLAIR) brain magnetic resonance imaging (MRI) provides superior visualization and characterization of MS lesions, relative to other MRI modalities. Longitudinal brain FLAIR MRI in MS, involving repetitively imaging a patient over time, provides helpful information for clinicians towards monitoring disease progression. Predicting future whole brain MRI examinations with variable time lag has only been attempted in limited applications, such as healthy aging and structural degeneration in Alzheimer’s Disease. In this article, we present novel modifications to deep learning architectures for MS FLAIR image synthesis / estimation, in order to support prediction of longitudinal images in a flexible continuous way. This is achieved with learned transposed convolutions, which supports modeling time as a spatially distributed array with variable temporal properties at different spatial locations. Thus, this approach can theoretically model spatially-specific time-dependent brain development, supporting the modeling of more rapid growth at appropriate physical locations, such as the site of an MS brain lesion. This approach also supports the clinician user to define how far into the future a predicted examination should target. Four distinct deep learning architectures have been developed. The ISBI2015 longitudinal MS dataset was used to validate and compare our proposed approaches. Results demonstrate that a modified ACGAN achieves the best performance and reduces variability in model accuracy.
 
-## Example Predicted Images 
-<!-- ![quanlitative_result](figs/qualitative_result_.jpg) -->
-<img src="figs/qualitative_result_.jpg" width = "450" alt="quanlitative_result" align=center />
-
-## Installation
+## Requirements
 First, install following dependencies
 ```bash
 torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
@@ -33,6 +28,17 @@ monai==0.7.0
 pytorch-lightning==1.4.0
 ```
 
+## Train
+To run the experiments from our paper the following bash scripts specifies the commands to run: 
+|              Network               | Job Script              |
+| :--------------------------------: | ----------------------- |
+|           Modified ACGAN           | ./Job_scripts/ACGAN.sh  |
+| Discriminator-Induced Time 3D cGAN | ./Job_scripts/dt-GAN.sh |
+|   Generator-Induced Time 3D cGAN   | ./Job_scripts/gt-GAN.sh |
+|              3D rUNet              | ./Job_scripts/UNet.sh   |
+
+You can also find all the hparams for each models here. It would take around 4 ~ 6 hours to train each model parallelled on 4 A100 GPUs (40GB).
+
 ## Folder Structure
 ```bash
 MS-Longitudinal-FLAIR-MR-Image-Synthesis/
@@ -42,10 +48,10 @@ MS-Longitudinal-FLAIR-MR-Image-Synthesis/
 │       ├── exams-5
 │       └── exams-6
 ├── Job_scripts - Job scripts to run different models
-│   ├── run_Cedar_MS_ACGAN.sh
-│   ├── run_Narval_MS_dGAN.sh
-│   ├── run_Narval_MS_rUNet.sh
-│   └── run_Narval_MS_gGAN.sh
+│   ├── ACGAN.sh
+│   ├── dt-GAN.sh
+│   ├── UNet.sh
+│   └── gt-GAN.sh
 ├── LICENSE
 ├── project
 │   ├── __init__.py
@@ -69,12 +75,8 @@ MS-Longitudinal-FLAIR-MR-Image-Synthesis/
 │   │       ├── __init__.py
 │   │       └── unet.py
 │   └── utils - utils and visualization
+│       ├── compute_std.py
 │       ├── const.py
-│       ├── inference.py
-│       ├── plot.py
-│       ├── predict_img.py
-│       ├── read_data.py
-│       ├── summary_of_all_layers.py
 │       ├── transforms.py
 │       ├── visualize_6_timepoint_sample.py
 │       ├── visualize.py
@@ -82,14 +84,8 @@ MS-Longitudinal-FLAIR-MR-Image-Synthesis/
 └── README.md
 ```
 
+## Results
+<img src="figs/qualitative_result_.jpg" width = "450" alt="quanlitative_result" align=center />
 
-## Train
-To run the experiments from our paper the following bash scripts specifies the commands to run: 
-|              Network               | Job Script                           |
-| :--------------------------------: | ------------------------------------ |
-|           Modified ACGAN           | ./Job_scripts/run_Cedar_MS_ACGAN.sh  |
-| Discriminator-Induced Time 3D cGAN | ./Job_scripts/run_Narval_MS_dGAN.sh  |
-|   Generator-Induced Time 3D cGAN   | ./Job_scripts/run_Narval_MS_gGAN.sh  |
-|              3D rUNet              | ./Job_scripts/run_Narval_MS_rUNet.sh |
-
-(It would take around 6 ~ 8 hours to train each model parallelled on 4 A100 GPUs (40GB).)
+## Citation
+If you find this code useful, please consider citing our paper:

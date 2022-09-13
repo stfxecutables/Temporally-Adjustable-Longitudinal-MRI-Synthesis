@@ -5,7 +5,7 @@
  
 # Temporally Adjustable Longitudinal FAIR MRI Estimation / Synthesis for Multiple Sclerosis
 
-<!-- [![Paper](http://img.shields.io/badge/paper-arxiv.1001.2234-B31B1B.svg)](https://www.nature.com/articles/nature14539) -->
+[![Paper](https://img.shields.io/badge/paper-arxiv.2209.04275-red)](https://arxiv.org/ftp/arxiv/papers/2209/2209.04275.pdf)
 <!-- [![Conference](http://img.shields.io/badge/NeurIPS-2019-4b44ce.svg)](https://papers.nips.cc/book/advances-in-neural-information-processing-systems-31-2018) -->
 <!--
 ARXIV   
@@ -15,6 +15,11 @@ ARXIV
 
 ## Abstract
 Multiple Sclerosis (MS) is a chronic progressive neurological disease characterized by the development of lesions in the white matter of the brain. T2-fluid-attenuated inversion recovery (FLAIR) brain magnetic resonance imaging (MRI) provides superior visualization and characterization of MS lesions, relative to other MRI modalities. Longitudinal brain FLAIR MRI in MS, involving repetitively imaging a patient over time, provides helpful information for clinicians towards monitoring disease progression. Predicting future whole brain MRI examinations with variable time lag has only been attempted in limited applications, such as healthy aging and structural degeneration in Alzheimer’s Disease. In this article, we present novel modifications to deep learning architectures for MS FLAIR image synthesis / estimation, in order to support prediction of longitudinal images in a flexible continuous way. This is achieved with learned transposed convolutions, which supports modeling time as a spatially distributed array with variable temporal properties at different spatial locations. Thus, this approach can theoretically model spatially-specific time-dependent brain development, supporting the modeling of more rapid growth at appropriate physical locations, such as the site of an MS brain lesion. This approach also supports the clinician user to define how far into the future a predicted examination should target. Four distinct deep learning architectures have been developed. The ISBI2015 longitudinal MS dataset was used to validate and compare our proposed approaches. Results demonstrate that a modified ACGAN achieves the best performance and reduces variability in model accuracy.
+
+## Results
+<img src="figs\different_time_point_fig_with_caption.png" width = "1300" alt="quanlitative_result" align=center />
+
+<img src="figs\multiple_time_point_new.gif" width = "1100" alt="quanlitative_result" align=center />
 
 ## Model Architecture
 <img src="figs\architecture.png" width = "1000" alt="quanlitative_result" align=center/>
@@ -87,5 +92,16 @@ Temporally-Adjustable-Longitudinal-MRI-Synthesis/
 └── README.md
 ```
 
-## Results
-<img src="figs\predicted_images.jpg" width = "1300" alt="quanlitative_result" align=center />
+## Reference
+
+If you find this work useful for your research, please cite our paper:
+
+```bibtex
+@inproceedings{Wang2022temporally,
+   author = {Jueqi Wang and Derek Berger and Erin Mazerolle and Othman Soufan and Jacob Levma},
+   journal = {International MICCAI Brainlesion Workshop},
+   title = {Temporally Adjustable Longitudinal Fluid-Attenuated Inversion Recovery MRI Estimation / Synthesis for Multiple Sclerosis},
+   year = {2022},
+   url = {https://arxiv.org/abs/2209.04275}
+}
+```
